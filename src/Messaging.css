@@ -1,0 +1,36 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+.msg-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* background-color: grey; */
+    height: 100vh;
+    padding: 20px 10px;
+}
+.header {
+    display: flex;
+    justify-content: space-around;
+}
+.msg-box {
+    width: 90%;
+    /* border: 1px solid red; */
+    display: flex;
+    gap: 2px;
+}
+.msg-box input {
+    border: 1px solid grey;
+    outline: none;
+    padding-left: 10px;
+    font-size: large;
+    flex: 5;
+}
+.msg-box input:focus {
+    outline: 1px solid blue;
+}
+.msg-box button {
+    flex: 1;
+}
