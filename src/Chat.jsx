@@ -3,13 +3,46 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import UserList from './UserList';
 import Messaging from './Messaging';
+import { useUserContext } from './userContext';
+import { io } from 'socket.io-client';
+
 import './Login.css';
 
 function Chat() {
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [users, setUsers] = useState([]);
-    const [currentUser, setCurrentUser] = useState(null);
+    const {
+        setSelectedUser,
+        users,
+        setUsers,
+        currentUser,
+        setCurrentUser,
+        socket,
+        setSocket,
+        setOnlineUsers,
+    } = useUserContext();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        if (currentUser == null) return;
+        const newSocket = io('http://localhost:3000');
+        setSocket(newSocket);
+
+        return () => {
+            newSocket.disconnect();
+        };
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (socket == null) return;
+
+        socket.emit('addNewUser', currentUser.id);
+        socket.on('getOnlineUsers', (onlineUsers) => {
+            setOnlineUsers(onlineUsers);
+            socket.emit('receive', onlineUsers);
+        });
+        return () => {
+            socket.off('getOnlineUsers');
+        };
+    }, [socket]);
 
     useEffect(() => {
         let user = localStorage.getItem('user');
@@ -75,11 +108,7 @@ function Chat() {
                     paddingTop: '10px',
                 }}
             >
-                <Messaging
-                    selectedUser={selectedUser}
-                    currentUser={currentUser}
-                    logout={logout}
-                />
+                <Messaging />
                 <button
                     type="button"
                     onClick={logout}

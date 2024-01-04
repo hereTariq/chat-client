@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useUserContext } from './userContext';
 
-const UserList = ({ currentUser, users, handleSelectUser }) => {
+const UserList = ({ handleSelectUser }) => {
     const [selectedUserIndex, setSelectedUserIndex] = useState(undefined);
-
+    const { onlineUsers, currentUser, users, selectedUser } = useUserContext();
     const changeCurrentChat = (id, user) => {
         setSelectedUserIndex(id);
         handleSelectUser(user);
     };
+
     return (
         <div
             style={{
@@ -29,15 +31,22 @@ const UserList = ({ currentUser, users, handleSelectUser }) => {
                         gap: '10px',
                     }}
                 >
-                    {users.map((user) => (
+                    {users?.map((user) => (
                         <h4
                             key={user?._id}
                             onClick={() => changeCurrentChat(user?._id, user)}
                             style={
                                 user?._id == selectedUserIndex
-                                    ? { color: 'blue' }
+                                    ? {
+                                          cursor: 'pointer',
+                                      }
                                     : {}
                             }
+                            className={`${
+                                onlineUsers?.some((u) => u?.userId == user?._id)
+                                    ? 'online'
+                                    : ''
+                            }`}
                         >
                             {user?.username}
                         </h4>

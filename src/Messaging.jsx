@@ -1,16 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { useUserContext } from './userContext';
 
 import './Messaging.css';
 
-const Messaging = ({ selectedUser, currentUser, logout }) => {
-    const [messages, setMessages] = useState([]);
-    const [newMessage, setNewMessage] = useState('');
+const Messaging = () => {
+    const {
+        messages,
+        setMessages,
+        currentUser,
+        selectedUser,
+        newMessage,
+        setNewMessage,
+        socket,
+    } = useUserContext();
+    const [actMessage, setActMessage] = useState(null);
 
     const navigate = useNavigate();
-    const socket = io('http://localhost:3000');
 
     useEffect(() => {
         // console.log({ currentUser });
@@ -25,16 +32,15 @@ const Messaging = ({ selectedUser, currentUser, logout }) => {
                     }
                 );
                 if (data.success) {
-                    setMessages(data.conversation);
-                    console.log(data);
+                    setMessages(data.conversation.messages);
                 } else {
                     console.log(data);
-                    setMessages([]);
+                    // setMessages([]);
                 }
             } catch (error) {
                 // console.log(error);
                 if (!error?.response?.data?.success) {
-                    setMessages([]);
+                    // setMessages([]);
                 }
                 if (error?.response?.status == 401) {
                     localStorage.clear();
@@ -43,13 +49,32 @@ const Messaging = ({ selectedUser, currentUser, logout }) => {
             }
         };
         fetchMessages();
-
-        if (currentUser) {
-            console.log(currentUser.id);
-            socket.emit('add-user', currentUser.id);
-        }
     }, [selectedUser]);
 
+    useEffect(() => {
+        if (socket == null) return;
+
+        socket.emit('sendMessage', {
+            conversation: messages[messages.length - 1],
+            to: selectedUser._id,
+        });
+        return () => {
+            socket.off('sendMessage');
+        };
+    }, [actMessage]);
+
+    useEffect(() => {
+        if (socket == null) return;
+
+        socket.on('receiveMessage', (msg) => {
+            // console.log(msg);
+            setMessages((prevMessages) => [...prevMessages, msg]);
+        });
+
+        return () => {
+            socket.off('receiveMessage');
+        };
+    }, [socket, selectedUser]);
     const handleSendMessage = async (e) => {
         if (!newMessage || !selectedUser) {
             return alert('please type a message..');
@@ -70,23 +95,10 @@ const Messaging = ({ selectedUser, currentUser, logout }) => {
                 }
             );
             if (data.success) {
-                console.log(data);
+                setActMessage(newMessage);
+                setMessages(data.newConversation.messages);
             }
 
-            socket.emit('send-message', {
-                conversation:
-                    data.newConversation.messages[
-                        data.newConversation.messages.length - 1
-                    ],
-                to: selectedUser._id,
-            });
-
-            setMessages(data.newConversation.messages);
-
-            socket.on('send-message', (msg) => {
-                console.log(msg);
-                setMessages((prevMessages) => [...prevMessages, msg]);
-            });
             setNewMessage('');
         } catch (error) {
             console.error('Error sending message:', error);
@@ -107,9 +119,9 @@ const Messaging = ({ selectedUser, currentUser, logout }) => {
                 </h2>
             </div>
             <div>
-                {messages.map((message) => (
-                    <div key={message._id}>
-                        {/*{message.sender.username}:*/} {message.content}
+                {messages?.map((message) => (
+                    <div key={message?._id}>
+                        {/*{message.sender.username}:*/} {message?.content}
                     </div>
                 ))}
             </div>
